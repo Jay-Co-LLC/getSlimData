@@ -358,54 +358,43 @@ allItemIds = []
 
 def main(event, context):
 	
-	try:		
-		getAllItemIds()
-			
-		for listOfItemIds in allItemIds:
-			t = Thread(target=getItems, args=(listOfItemIds,))
-			threads.append(t)
-			
-		for t in threads:
-			t.start()
-			
-		for t in threads:
-			t.join()
-			
-		# Write file to temp local storage
-		logger.info(f"[{userid}] Writing file to /tmp/")
-		outwb.save('out.xlsx')
+	getAllItemIds()
 		
-		# Put file to FTP server
-		logger.info(f"[{userid}] Copying file from /tmp/ to FTP")
-		filename = f"{userid}-data.xlsx"
+	for listOfItemIds in allItemIds:
+		t = Thread(target=getItems, args=(listOfItemIds,))
+		threads.append(t)
 		
-		logger.info(f"[{userid}] Connecting to FTP...")
+	for t in threads:
+		t.start()
 		
-		ftp = ftplib.FTP()
-		ftp.connect('162.241.253.129', 21, timeout=120)
-		ftp.set_debuglevel(1)
-		ftp.set_pasv(True)
-		ftp.login('sam@jaycotss.com', 'TSSconnect1!')
+	for t in threads:
+		t.join()
 		
-		f = open('out.xlsx', 'rb')
-		
-		logger.info(f"[{userid}] Sending local file to FTP...")
-		ftp.storbinary(f'STOR {filename}', f)
-		
-		f.close()
-		
-		logger.info(f"[{userid}] Closing FTP session...")
-		ftp.quit()
-		
-		ipr(f"[{userid}] Done.")
-		
-	except Exception as e:
-		logger.error(e)
-		
-		return {
-			'statusCode' : 404,
-			'headers' : {
-                    'Access-Control-Allow-Origin' : '*'
-                },
-			'body' : json.dumps('Error running getFullData')
-		}
+	# Write file to temp local storage
+	logger.info(f"[{userid}] Writing file to /tmp/")
+	outwb.save('/tmp/out.xlsx')
+	
+	# Put file to FTP server
+	logger.info(f"[{userid}] Copying file from /tmp/ to FTP")
+	filename = f"{userid}-data.xlsx"
+	
+	logger.info(f"[{userid}] Connecting to FTP...")
+	
+	ftp = ftplib.FTP()
+	ftp.connect(os.environ['ftp_ip'], 21, timeout=120)
+	ftp.set_debuglevel(1)
+	ftp.set_pasv(True)
+	ftp.login('sam@jaycotss.com', 'TSSconnect1!')
+	
+	f = open('/tmp/out.xlsx', 'rb')
+	
+	logger.info(f"[{userid}] Sending local file to FTP...")
+	ftp.storbinary(f'STOR {filename}', f)
+	
+	f.close()
+	
+	logger.info(f"[{userid}] Closing FTP session...")
+	ftp.quit()
+	
+	logger.info(f"[{userid}] Done.")
+
